@@ -1,0 +1,39 @@
+Participant User
+Participant WebApp
+Participant Redis
+Participant Database
+Participant SessionRepository
+
+User->WebApp: Update Password Request
+WebApp->Database: Update Password in DB
+Database->WebApp: Password Updated
+WebApp->Redis: Get Sessions for User
+Redis->WebApp: Return Session IDs
+WebApp->SessionRepository: Delete Session by ID
+loop for each session ID
+  SessionRepository->WebApp: Session Deleted
+end
+WebApp->Redis: Delete All Sessions for User
+WebApp->User: Password Updated and Sessions Invalidated
+
+
+
+@startuml
+actor User
+participant "WebApp" as WebApp
+participant "Redis" as Redis
+participant "Database" as Database
+participant "SessionRepository" as SessionRepository
+
+User -> WebApp: Update Password Request
+WebApp -> Database: Update Password in DB
+Database -> WebApp: Password Updated
+WebApp -> Redis: Get Sessions for User
+Redis -> WebApp: Return Session IDs
+WebApp -> SessionRepository: Delete Session by ID
+loop for each session ID
+  SessionRepository -> WebApp: Session Deleted
+end
+WebApp -> Redis: Delete All Sessions for User
+WebApp -> User: Password Updated and Sessions Invalidated
+@enduml
