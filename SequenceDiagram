@@ -37,3 +37,31 @@ end
 WebApp -> Redis: Delete All Sessions for User
 WebApp -> User: Password Updated and Sessions Invalidated
 @enduml
+
+
+
+@startuml
+actor User
+participant "WebApp" as WebApp
+participant "Redis" as Redis
+participant "Database" as Database
+participant "SessionRepository" as SessionRepository
+
+== User Logs In ==
+User -> WebApp: Login Request
+WebApp -> Database: Validate Credentials
+Database -> WebApp: Credentials Valid
+WebApp -> SessionRepository: Create Session
+SessionRepository -> WebApp: Session Created
+WebApp -> Redis: Add Session ID to User Sessions
+Redis -> WebApp: Session ID Added
+WebApp -> User: Login Successful
+
+== User Logs Out ==
+User -> WebApp: Logout Request
+WebApp -> SessionRepository: Invalidate Session
+SessionRepository -> WebApp: Session Invalidated
+WebApp -> Redis: Remove Session ID from User Sessions
+Redis -> WebApp: Session ID Removed
+WebApp -> User: Logout Successful
+@enduml
