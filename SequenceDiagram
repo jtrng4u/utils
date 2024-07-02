@@ -38,3 +38,38 @@ WebApp -> Redis: Remove Session ID from User Sessions
 Redis -> WebApp: Session ID Removed
 WebApp -> User: Logout Successful
 @enduml
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@startuml
+actor User
+participant "WebApp" as WebApp
+participant "SessionValidationFilter" as Filter
+participant "Redis" as Redis
+
+User -> WebApp: Send Request with Session ID
+WebApp -> Filter: Intercept Request
+Filter -> Filter: Retrieve Session ID and User ID
+Filter -> Redis: Check Session ID for User
+Redis -> Filter: Return Valid/Invalid
+alt Session is Valid
+    Filter -> WebApp: Proceed with Request
+    WebApp -> User: Return Response
+else Session is Invalid
+    Filter -> WebApp: Invalidate Session
+    WebApp -> User: Redirect to Login
+end
+@enduml
