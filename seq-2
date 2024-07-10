@@ -1,0 +1,125 @@
+Title: OAuth2 Login Process
+
+WebApp -> Browser: User initiates login
+Browser -> WebApp: /login
+WebApp -> OAuth2Server: /authorize
+OAuth2Server -> Browser: Redirect to login page
+Browser -> OAuth2Server: User enters credentials and submits
+OAuth2Server -> OAuth2Server: Validate credentials
+OAuth2Server -> WebApp: Authorization code
+WebApp -> OAuth2Server: Exchange code for access token
+OAuth2Server -> WebApp: Access token
+WebApp -> WebApp: Create session and store in Redis
+WebApp -> Browser: Redirect to protected resource
+Browser -> WebApp: Request protected resource with session
+WebApp -> WebApp: Validate session
+WebApp -> Browser: Serve protected resource
+
+
+
+Title: OAuth2 Logout Process
+
+WebApp -> Browser: User initiates logout
+Browser -> WebApp: /logout
+WebApp -> OAuth2Server: /logout (if applicable)
+WebApp -> Redis: Invalidate session in Redis
+OAuth2Server -> Browser: Redirect to WebApp (optional)
+WebApp -> Browser: Redirect to login page
+
+
+Title: OAuth2 Logout Process
+
+WebApp -> Browser: User initiates logout
+Browser -> WebApp: /logout
+WebApp -> OAuth2Server: /logout (if applicable)
+WebApp -> Redis: Invalidate session in Redis
+OAuth2Server -> Browser: Redirect to WebApp (optional)
+WebApp -> Browser: Redirect to login page
+
+
+
+Title: OAuth2 Login Process
+
+participant User
+participant Browser
+participant WebApp
+participant OAuth2Server
+participant Redis
+
+User -> Browser: Initiate login
+Browser -> WebApp: /login
+WebApp -> OAuth2Server: /authorize
+OAuth2Server -> Browser: Redirect to OAuth2 login page
+Browser -> OAuth2Server: Submit credentials
+OAuth2Server -> OAuth2Server: Validate credentials
+OAuth2Server -> Browser: Authorization code
+Browser -> WebApp: Authorization code
+WebApp -> OAuth2Server: Exchange code for access token
+OAuth2Server -> WebApp: Access token
+WebApp -> Redis: Store session with access token
+WebApp -> Browser: Redirect to protected resource
+Browser -> WebApp: Request protected resource
+WebApp -> Redis: Validate session
+WebApp -> Browser: Serve protected resource
+
+
+
+Title: OAuth2 Logout Process
+
+participant User
+participant Browser
+participant WebApp
+participant OAuth2Server
+participant Redis
+
+User -> Browser: Initiate logout
+Browser -> WebApp: /logout
+WebApp -> OAuth2Server: /logout (optional)
+WebApp -> Redis: Invalidate session in Redis
+WebApp -> Browser: Redirect to login page
+
+
+
+Title: Password Change Process
+
+participant User
+participant Browser
+participant WebApp
+participant UserStore
+participant OAuth2Server
+participant Redis
+
+User -> Browser: Initiate password change
+Browser -> WebApp: /change-password
+WebApp -> UserStore: Update password
+UserStore -> WebApp: Password updated
+WebApp -> OAuth2Server: Revoke all tokens for user
+WebApp -> Redis: Invalidate all sessions for user
+WebApp -> Browser: Confirm password change
+
+
+
+Title: Password Change Process
+
+participant User
+participant Browser
+participant WebApp
+participant UserStore
+participant OAuth2Server
+participant Redis
+
+User -> Browser: Initiate password change
+Browser -> WebApp: /change-password with new password
+WebApp -> UserStore: Update password
+UserStore -> WebApp: Password updated
+WebApp -> OAuth2Server: Revoke all tokens for the user
+WebApp -> Redis: Invalidate all sessions for the user
+WebApp -> Browser: Password change confirmation
+Description
+User Initiates Password Change: The user initiates a password change process through the web application.
+Browser Sends Password Change Request: The browser sends a request to the web application's /change-password endpoint with the new password.
+WebApp Updates Password in User Store: The web application processes the request and updates the user's password in the user store (e.g., database).
+Password Updated Confirmation: The user store confirms the password update.
+WebApp Revokes OAuth2 Tokens: The web application calls the OAuth2 server's token revocation endpoint to revoke all active tokens for the user.
+WebApp Invalidates User Sessions in Redis: The web application invalidates all sessions associated with the user in Redis.
+Browser Receives Confirmation: The browser receives confirmation that the password has been changed successfully.
