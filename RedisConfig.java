@@ -1,109 +1,50 @@
-<dependencies>
-    <dependency>
-    <groupId>org.springframework.data</groupId>
-    <artifactId>spring-data-redis</artifactId>
-    <version>2.6.4</version> <!-- Use the appropriate version -->
-    </dependency>
-    <dependency>
-    <groupId>org.springframework.integration</groupId>
-    <artifactId>spring-integration-core</artifactId>
-    <version>5.5.9</version> <!-- Use the appropriate version -->
-    </dependency>
-    <dependency>
-    <groupId>org.springframework.integration</groupId>
-    <artifactId>spring-integration-redis</artifactId>
-    <version>5.5.9</version> <!-- Use the appropriate version -->
-    </dependency>
-    <dependency>
-    <groupId>org.springframework</groupId>
-    <artifactId>spring-web</artifactId>
-    <version>5.3.15</version> <!-- Use the appropriate version -->
-    </dependency>
-    <dependency>
-    <groupId>org.springframework</groupId>
-    <artifactId>spring-context</artifactId>
-    <version>5.3.15</version> <!-- Use the appropriate version -->
-    </dependency>
-    </dependencies>
-
-
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.integration.annotation.ServiceActivator;
-import org.springframework.integration.channel.DirectChannel;
-import org.springframework.integration.redis.inbound.RedisInboundChannelAdapter;
-import org.springframework.integration.redis.outbound.RedisPublishingMessageHandler;
-import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.MessageHandler;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
-
-@Configuration
-public class IntegrationConfig {
-
-  @Bean
-  public MessageChannel publishChannel() {
-    return new DirectChannel();
-  }
-
-  @Bean
-  public MessageChannel subscribeChannel() {
-    return new DirectChannel();
-  }
-
-  @Bean
-  @ServiceActivator(inputChannel = "publishChannel")
-  public MessageHandler redisMessagePublisher(RedisTemplate<String, Object> redisTemplate) {
-    RedisPublishingMessageHandler handler = new RedisPublishingMessageHandler(redisTemplate);
-    handler.setTopic("data-change");
-    return handler;
-  }
-
-  @Bean
-  @ServiceActivator(inputChannel = "subscribeChannel")
-  public MessageHandler redisMessageSubscriber() {
-    return message -> {
-      String payload = (String) message.getPayload();
-      System.out.println("Received message: " + payload);
-      // Handle the data change event
-    };
-  }
-
-  @Bean
-  public RedisInboundChannelAdapter redisInbound(RedisConnectionFactory redisConnectionFactory) {
-    RedisInboundChannelAdapter adapter = new RedisInboundChannelAdapter(redisConnectionFactory);
-    adapter.setTopics("data-change");
-    adapter.setOutputChannel(subscribeChannel());
-    return adapter;
-  }
-}
-
-
-
-
 import org.springframework.beans.factory.annotation.Autowired;
-    import org.springframework.integration.support.MessageBuilder;
-    import org.springframework.messaging.MessageChannel;
-    import org.springframework.stereotype.Controller;
-    import org.springframework.web.bind.annotation.PostMapping;
-    import org.springframework.web.bind.annotation.RequestMapping;
-    import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.security.core.session.SessionInformation;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
+import org.springframework.stereotype.Component;
 
-@Controller
-@RequestMapping("/broadcast")
-public class BroadcastController {
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+@Component
+public class SessionValidationFilter implements javax.servlet.Filter {
 
   @Autowired
-  private MessageChannel publishChannel;
+  private SessionRegistry sessionRegistry;
 
-  @PostMapping
-  @ResponseBody
-  public String broadcastChange() {
-    String message = "Data has changed";
-    publishChannel.send(MessageBuilder.withPayload(message).build());
-    return "Broadcast successful";
+  @Override
+  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+    HttpServletRequest httpRequest = (HttpServletRequest) request;
+    HttpServletResponse httpResponse = (HttpServletResponse) response;
+
+    String sessionId = httpRequest.getRequestedSessionId();
+    if (sessionId != null) {
+      SessionInformation sessionInformation = sessionRegistry.getSessionInformation(sessionId);
+      if (sessionInformation == null || sessionInformation.isExpired()) {
+        new SecurityContextLogoutHandler().logout(httpRequest, httpResponse, null);
+        httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        httpResponse.getWriter().write("Session expired. Please log in again.");
+        return;
+      }
+    }
+
+    chain.doFilter(request, response);
+  }
+
+  @Override
+  public void init(FilterConfig filterConfig) throws ServletException {
+    // Initialization logic if needed
+  }
+
+  @Override
+  public void destroy() {
+    // Cleanup logic if needed
   }
 }
-
-
-
