@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Define paths
+MAVEN_PROJECT_DIR="/path/to/your/maven/project"
+FILE_PATH="/path/to/your/file.txt"
+FOLDER_PATH="/path/to/your/folder"
+SOURCE_FILE="/path/to/your/sourcefile.txt"
+DESTINATION_DIR="/path/to/your/destination/directory"
+SH_FILE="/path/to/your/script.sh"
+
+# 1. Run Maven command in a specific folder
+echo "Running Maven command in $MAVEN_PROJECT_DIR..."
+pushd "$MAVEN_PROJECT_DIR" > /dev/null
+mvn clean install
+MAVEN_RESULT=$?
+popd > /dev/null
+
+# Check if Maven command was successful
+if [ $MAVEN_RESULT -eq 0 ]; then
+  echo "Maven command successful. Proceeding with other actions..."
+
+  # 2. Kill the Java process
+  echo "Killing Java process..."
+  pkill -f java
+
+  # 3. Delete a file and folder
+  echo "Deleting file and folder..."
+  rm -f "$FILE_PATH"
+  rm -rf "$FOLDER_PATH"
+
+  # 4. Copy a file to another directory
+  echo "Copying file..."
+  cp "$SOURCE_FILE" "$DESTINATION_DIR"
+
+  # 5. Run a .sh file
+  echo "Running .sh file..."
+  chmod +x "$SH_FILE"
+  "$SH_FILE"
+
+  echo "All actions completed."
+else
+  echo "Maven command failed. Aborting other actions."
+fi
